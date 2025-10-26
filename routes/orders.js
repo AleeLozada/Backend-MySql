@@ -13,7 +13,6 @@ router.route('/')
 router.route('/:id')
   .get(orderController.getOrderById)     
   .put(orderController.updateOrderDetails)
-  // .delete(orderController.deleteOrder); // Si tienes la función deleteOrder
 
 // Modificar items y recalcular el total
 router.route('/:id/items')
