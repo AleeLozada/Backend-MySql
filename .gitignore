@@ -38,3 +38,5 @@ logs/
 *.pid
 *.seed
 *.pid.lock
+auth/key.json
+*.json
