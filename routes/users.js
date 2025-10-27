@@ -1,91 +1,38 @@
-// controllers/userController.js
-import { User } from '../models/index.js';
+import express from 'express';
+import { 
+  get_profile,
+  update_profile,
+  change_password,
+  get_users,
+  get_user_by_id,
+  update_user_role,
+  delete_user,
+  create_user,
+  get_users_stats,
+  promote_to_admin
+} from '../controllers/user_controller.js';
+import { protect, restrict_to } from '../middleware/auth.js';
 
-// Obtener todos los usuarios (admin)
-export const getUsers = async (req, res) => {
-  try {
-    const users = await User.findAll({
-      attributes: { exclude: ['password'] },
-      order: [['createdAt', 'DESC']]
-    });
+const router = express.Router();
 
-    res.json({
-      success: true,
-      cantidad: users.length,
-      users
-    });
-  } catch (error) {
-    console.error('Error al obtener usuarios:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error al cargar usuarios'
-    });
-  }
-};
+// Rutas protegidas para usuarios autenticados
+router.use(protect);
 
-// Obtener usuario por ID (admin)
-export const getUserById = async (req, res) => {
-  try {
-    const user = await User.findByPk(req.params.id, {
-      attributes: { exclude: ['password'] }
-    });
+// Perfil del usuario autenticado
+router.get('/profile', get_profile);
+router.put('/profile', update_profile);
+router.put('/change-password', change_password);
 
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'Usuario no encontrado'
-      });
-    }
+// Rutas solo para admin
+router.use(restrict_to('admin'));
 
-    res.json({
-      success: true,
-      user
-    });
-  } catch (error) {
-    console.error('Error al obtener usuario:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error al cargar usuario'
-    });
-  }
-};
+// Administración de usuarios (admin)
+router.get('/', get_users);
+router.get('/stats', get_users_stats);
+router.get('/:id', get_user_by_id);
+router.post('/', create_user);
+router.put('/:id/role', update_user_role);
+router.delete('/:id', delete_user);
+router.put('/promote', promote_to_admin);
 
-// Actualizar perfil de usuario
-export const updateProfile = async (req, res) => {
-  try {
-    const { nombre, telefono, direccion } = req.body;
-    const user = await User.findByPk(req.user.id);
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'Usuario no encontrado'
-      });
-    }
-
-    await user.update({
-      nombre: nombre || user.nombre,
-      telefono: telefono || user.telefono,
-      direccion: direccion || user.direccion
-    });
-
-    res.json({
-      success: true,
-      message: 'Perfil actualizado exitosamente',
-      user: {
-        id: user.id,
-        nombre: user.nombre,
-        email: user.email,
-        telefono: user.telefono,
-        direccion: user.direccion,
-        role: user.role
-      }
-    });
-  } catch (error) {
-    console.error('Error al actualizar perfil:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error al actualizar perfil'
-    });
-  }
-};
+export default router;

@@ -1,50 +1,17 @@
 // routes/search.js
 import express from 'express';
-import { Product } from '../models/index.js';
-import { Op } from 'sequelize';
+import {
+  search_products,
+  quick_search,
+  get_search_suggestions,
+  get_search_filters
+} from '../controllers/search_controller.js';
 
 const router = express.Router();
 
-// Buscar productos
-router.get('/products', async (req, res) => {
-  try {
-    const { q, categoria } = req.query;
-    
-    if (!q) {
-      return res.status(400).json({
-        success: false,
-        message: 'Término de búsqueda requerido'
-      });
-    }
-
-    let whereClause = {
-      disponible: true,
-      nombre: {
-        [Op.like]: `%${q}%`
-      }
-    };
-
-    if (categoria && categoria !== 'all') {
-      whereClause.categoria = categoria;
-    }
-
-    const products = await Product.findAll({
-      where: whereClause,
-      order: [['nombre', 'ASC']]
-    });
-
-    res.json({
-      success: true,
-      termino: q,
-      cantidad: products.length,
-      products
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error en la búsqueda'
-    });
-  }
-});
+router.get('/products', search_products);
+router.get('/quick', quick_search);
+router.get('/suggestions', get_search_suggestions);
+router.get('/filters', get_search_filters);
 
 export default router;

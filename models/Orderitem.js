@@ -1,8 +1,8 @@
-// models/OrderItem.js
+// models/orderitem.js
 import { DataTypes } from 'sequelize';
 
-const OrderItem = (sequelize) => {
-  const OrderItemModel = sequelize.define('OrderItem', {
+const orderitem = (sequelize) => {
+  const orderitem_model = sequelize.define('orderitem', {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
@@ -12,40 +12,52 @@ const OrderItem = (sequelize) => {
       type: DataTypes.INTEGER,
       allowNull: false,
       validate: {
-        min: 1
+        min: {
+          args: [1],
+          msg: 'La cantidad debe ser al menos 1'
+        }
       }
     },
     precio: {
       type: DataTypes.FLOAT,
       allowNull: false,
       validate: {
-        min: 0
+        min: {
+          args: [0],
+          msg: 'El precio no puede ser negativo'
+        }
       }
     },
     subtotal: {
       type: DataTypes.FLOAT,
       allowNull: false,
       validate: {
-        min: 0
+        min: {
+          args: [0],
+          msg: 'El subtotal no puede ser negativo'
+        }
       }
     }
   }, {
     tableName: 'order_items',
-    timestamps: true
+    timestamps: true,
+    underscored: true,
+    createdAt: 'created_at',    // ✅ Explícito
+    updatedAt: 'updated_at'     // ✅ Explícito
   });
 
-  OrderItemModel.associate = (models) => {
-    OrderItemModel.belongsTo(models.Order, {
-      foreignKey: 'orderId',
+  orderitem_model.associate = (models) => {
+    orderitem_model.belongsTo(models.order, {
+      foreignKey: 'order_id',
       as: 'order'
     });
-    OrderItemModel.belongsTo(models.Product, {
-      foreignKey: 'productId',
+    orderitem_model.belongsTo(models.product, {
+      foreignKey: 'product_id',
       as: 'product'
     });
   };
 
-  return OrderItemModel;
+  return orderitem_model;
 };
 
-export default OrderItem;
+export default orderitem;

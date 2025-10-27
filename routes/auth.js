@@ -1,50 +1,23 @@
-// middleware/auth.js
-import jwt from 'jsonwebtoken';
-import { User } from '../models/index.js';
+// routes/auth.js - VERSIÓN CORREGIDA
+import express from 'express';
+import { 
+  register, 
+  login,
+  verify_token,
+  change_password
+} from '../controllers/auth_controller.js';
 
-export const protect = async (req, res, next) => {
-  try {
-    let token;
-    
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-      token = req.headers.authorization.split(' ')[1];
-    }
-    
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: 'No autorizado - Token requerido'
-      });
-    }
-    
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret');
-    const user = await User.findByPk(decoded.id);
-    
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Token válido pero usuario no existe'
-      });
-    }
-    
-    req.user = user;
-    next();
-  } catch (error) {
-    return res.status(401).json({
-      success: false,
-      message: 'Token inválido o expirado'
-    });
-  }
-};
+import { protect } from '../middleware/auth.js';
+import { validate_register, validate_login } from '../middleware/validation.js';
 
-export const restrictTo = (...roles) => {
-  return (req, res, next) => {
-    if (!req.user || !roles.includes(req.user.role)) {
-      return res.status(403).json({
-        success: false,
-        message: 'No tienes permisos para esta acción'
-      });
-    }
-    next();
-  };
-};
+const router = express.Router();
+
+// Rutas públicas
+router.post('/register', validate_register, register);
+router.post('/login', validate_login, login);
+router.put('/change-password', change_password);
+// Rutas protegidas
+router.use(protect);
+router.get('/verify', verify_token);
+
+export default router;

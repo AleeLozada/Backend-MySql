@@ -1,72 +1,49 @@
-// models/Product.js
-import { DataTypes } from 'sequelize';
+// routes/products.js - VERSIÓN CORREGIDA
+import express from 'express';
+import { 
+  get_products,
+  get_product_by_id,
+  get_product_categories,
+  create_product,
+  update_product,
+  delete_product
+} from '../controllers/product_controller.js';
+import { protect, restrict_to } from '../middleware/auth.js';
+// ✅ CORREGIR: Usar exportaciones nombradas directamente
+import { upload_product_image, handle_upload_error } from '../middleware/upload.js';
+import { validate_product } from '../middleware/validation.js';
 
-const Product = (sequelize) => {
-  const ProductModel = sequelize.define('Product', {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true
-    },
-    nombre: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      validate: {
-        notEmpty: true
-      }
-    },
-    descripcion: {
-      type: DataTypes.TEXT,
-      allowNull: true
-    },
-    precio: {
-      type: DataTypes.FLOAT,
-      allowNull: false,
-      validate: {
-        min: 0
-      }
-    },
-    categoria: {
-      type: DataTypes.ENUM('bebidas', 'golosinas', 'sandwiches', 'snacks', 'postres'),
-      allowNull: false
-    },
-    imagen: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      defaultValue: ''
-    },
-    disponible: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: true
-    },
-    destacado: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false
-    },
-    promocion: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false
-    },
-    precioPromocion: {
-      type: DataTypes.FLOAT,
-      allowNull: true,
-      validate: {
-        min: 0
-      }
-    }
-  }, {
-    tableName: 'products',
-    timestamps: true
-  });
+const router = express.Router();
 
-  ProductModel.associate = (models) => {
-    ProductModel.hasMany(models.OrderItem, {
-      foreignKey: 'productId',
-      as: 'orderItems'
-    });
-  };
+// Rutas públicas
+router.get('/', get_products);
+router.get('/categories', get_product_categories);
+router.get('/:id', get_product_by_id);
 
-  return ProductModel;
-};
+// Rutas protegidas solo para admin
+router.use(protect);
+router.use(restrict_to('admin'));
+router.post('/', upload_product_image.single('imagen'), create_product); // ✅
+router.put('/:id', upload_product_image.single('imagen'), update_product); // ✅
+router.delete('/:id', delete_product); // ✅
 
-export default Product;
+// Crear producto con upload de imagen
+router.post('/', 
+  upload_product_image.single('imagen'), // ✅ Usar directamente
+  handle_upload_error,
+  validate_product,
+  create_product
+);
+
+// Actualizar producto
+router.put('/:id',
+  upload_product_image.single('imagen'), // ✅ Usar directamente
+  handle_upload_error,
+  validate_product,
+  update_product
+);
+
+// Eliminar producto
+router.delete('/:id', delete_product);
+
+export default router;

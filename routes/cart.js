@@ -1,55 +1,26 @@
 // routes/cart.js
 import express from 'express';
-import { Product } from '../models/index.js';
 import { protect } from '../middleware/auth.js';
+import {
+  validate_cart,
+  add_to_cart,
+  remove_from_cart,
+  update_cart_item,
+  clear_cart,
+  get_cart_summary
+} from '../controllers/cart_controller.js';
 
 const router = express.Router();
 
-// Validar carrito
-router.post('/validate', protect, async (req, res) => {
-  try {
-    const { items } = req.body;
-    const validatedItems = [];
-    let total = 0;
+// Todas las rutas protegidas
+router.use(protect);
 
-    for (const item of items) {
-      const product = await Product.findByPk(item.producto);
-      
-      if (!product || !product.disponible) {
-        return res.status(400).json({
-          success: false,
-          message: `El producto ${product?.nombre || item.producto} no está disponible`
-        });
-      }
-
-      const price = product.promocion && product.precioPromocion 
-        ? product.precioPromocion 
-        : product.precio;
-
-      const cartItem = {
-        producto: product.id,
-        nombre: product.nombre,
-        precio: price,
-        cantidad: item.cantidad,
-        imagen: product.imagen,
-        subtotal: price * item.cantidad
-      };
-
-      validatedItems.push(cartItem);
-      total += cartItem.subtotal;
-    }
-
-    res.json({
-      success: true,
-      items: validatedItems,
-      total
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: 'Error al validar carrito'
-    });
-  }
-});
+// Definición de rutas (SOLO esto)
+router.post('/validate', validate_cart);
+router.post('/add', add_to_cart);
+router.post('/remove', remove_from_cart);
+router.put('/update', update_cart_item);
+router.delete('/clear', clear_cart);
+router.post('/summary', get_cart_summary);
 
 export default router;

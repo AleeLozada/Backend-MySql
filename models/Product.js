@@ -1,8 +1,8 @@
-// models/Product.js
+// models/product.js (versión más explícita)
 import { DataTypes } from 'sequelize';
 
-const Product = (sequelize) => {
-  const ProductModel = sequelize.define('Product', {
+const product = (sequelize) => {
+  const product_model = sequelize.define('product', {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
@@ -12,7 +12,9 @@ const Product = (sequelize) => {
       type: DataTypes.STRING,
       allowNull: false,
       validate: {
-        notEmpty: true
+        notEmpty: {
+          msg: 'El nombre del producto no puede estar vacío'
+        }
       }
     },
     descripcion: {
@@ -23,12 +25,21 @@ const Product = (sequelize) => {
       type: DataTypes.FLOAT,
       allowNull: false,
       validate: {
-        min: 0
+        min: {
+          args: [0],
+          msg: 'El precio no puede ser negativo'
+        }
       }
     },
     categoria: {
       type: DataTypes.ENUM('bebidas', 'golosinas', 'sandwiches', 'snacks', 'postres'),
-      allowNull: false
+      allowNull: false,
+      validate: {
+        isIn: {
+          args: [['bebidas', 'golosinas', 'sandwiches', 'snacks', 'postres']],
+          msg: 'Categoría no válida'
+        }
+      }
     },
     imagen: {
       type: DataTypes.STRING,
@@ -47,26 +58,44 @@ const Product = (sequelize) => {
       type: DataTypes.BOOLEAN,
       defaultValue: false
     },
-    precioPromocion: {
+    precio_promocion: {
       type: DataTypes.FLOAT,
       allowNull: true,
       validate: {
-        min: 0
+        min: {
+          args: [0],
+          msg: 'El precio de promoción no puede ser negativo'
+        }
+      }
+    },
+    category_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'categories',
+        key: 'id'
       }
     }
   }, {
     tableName: 'products',
-    timestamps: true
+    timestamps: false,
+    underscored: true,
+    createdAt: false,    // ✅ Explícito
+    updatedAt: false     // ✅ Explícito
   });
 
-  ProductModel.associate = (models) => {
-    ProductModel.hasMany(models.OrderItem, {
-      foreignKey: 'productId',
-      as: 'orderItems'
+  product_model.associate = (models) => {
+    product_model.belongsTo(models.category, {
+      foreignKey: 'category_id',
+      as: 'category'
+    });
+    product_model.hasMany(models.orderitem, {
+      foreignKey: 'product_id',
+      as: 'order_items'
     });
   };
 
-  return ProductModel;
+  return product_model;
 };
 
-export default Product;
+export default product;
