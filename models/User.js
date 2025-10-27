@@ -1,40 +1,32 @@
+// models/user.js - ALTERNATIVA con snake_case explícito
 import { DataTypes } from 'sequelize';
 
-const User = (sequelize) => {
-  const UserModel = sequelize.define('User', {
+const user = (sequelize) => {
+  const user_model = sequelize.define('user', {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true
     },
     nombre: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      validate: {
-        notEmpty: true
-      }
+      type: DataTypes.STRING(255),
+      allowNull: false
     },
     email: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(255),
       allowNull: false,
-      unique: true,
-      validate: {
-        isEmail: true
-      }
+      unique: true
     },
     password: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      validate: {
-        len: [6, 100]
-      }
+      type: DataTypes.STRING(255),
+      allowNull: false
     },
     telefono: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(255),
       allowNull: true
     },
     direccion: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(255),
       allowNull: true
     },
     role: {
@@ -43,17 +35,20 @@ const User = (sequelize) => {
     }
   }, {
     tableName: 'users',
-    timestamps: true
+    timestamps: false,
+    createdAt: false,
+    updatedAt: false,
+    underscored: true
   });
 
-  UserModel.associate = (models) => {
-    UserModel.hasMany(models.Order, {
-      foreignKey: 'userId',
+  user_model.associate = (models) => {
+    user_model.hasMany(models.order, {
+      foreignKey: 'user_id',
       as: 'orders'
     });
   };
 
-  return UserModel;
+  return user_model;
 };
 
-export default User;
+export default user;

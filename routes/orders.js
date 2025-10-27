@@ -1,62 +1,36 @@
-// models/Order.js
-import { DataTypes } from 'sequelize';
+// routes/orders.js
+import express from 'express';
+import { 
+  create_order,
+  get_user_orders,
+  get_order_by_id,
+  update_order_status,
+  get_all_orders,
+  delete_order,
+  cancel_order,
+  get_user_order_stats
+} from '../controllers/order_controller.js';
+import { protect, restrict_to } from '../middleware/auth.js';
+import { validate_order } from '../middleware/validation.js'; // ✅ AGREGAR
 
-const Order = (sequelize) => {
-  const OrderModel = sequelize.define('Order', {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true
-    },
-    total: {
-      type: DataTypes.FLOAT,
-      allowNull: false,
-      validate: {
-        min: 0
-      }
-    },
-    estado: {
-      type: DataTypes.ENUM('pendiente', 'confirmado', 'preparando', 'listo', 'entregado', 'cancelado'),
-      defaultValue: 'pendiente'
-    },
-    metodoPago: {
-      type: DataTypes.ENUM('efectivo', 'tarjeta', 'qr'),
-      defaultValue: 'efectivo'
-    },
-    numeroPedido: {
-      type: DataTypes.STRING,
-      unique: true,
-      allowNull: true
-    },
-    notas: {
-      type: DataTypes.TEXT,
-      allowNull: true
-    }
-  }, {
-    tableName: 'orders',
-    timestamps: true
-  });
+const router = express.Router();
 
-  OrderModel.associate = (models) => {
-    OrderModel.belongsTo(models.User, {
-      foreignKey: 'userId',
-      as: 'user'
-    });
-    OrderModel.hasMany(models.OrderItem, {
-      foreignKey: 'orderId',
-      as: 'items'
-    });
-  };
+// Rutas protegidas para usuarios
+router.use(protect);
 
-  // Hook para generar número de pedido
-  OrderModel.beforeCreate(async (order) => {
-    if (!order.numeroPedido) {
-      const count = await OrderModel.count();
-      order.numeroPedido = `PED${String(count + 1).padStart(4, '0')}`;
-    }
-  });
+// ✅ INTEGRAR validación en crear orden
+router.post('/', validate_order, create_order);
 
-  return OrderModel;
-};
+// Obtener órdenes del usuario autenticado
+router.get('/my-orders', get_user_orders);
+router.get('/my-stats', get_user_order_stats);
+router.get('/:id', get_order_by_id);
+router.put('/:id/cancel', cancel_order);
 
-export default Order;
+// Rutas solo para admin
+router.use(restrict_to('admin'));
+router.get('/', get_all_orders);
+router.put('/:id/status', update_order_status);
+router.delete('/:id', delete_order);
+
+export default router;

@@ -1,29 +1,57 @@
-// models/Order.js
+// models/order.js
 import { DataTypes } from 'sequelize';
 
-const Order = (sequelize) => {
-  const OrderModel = sequelize.define('Order', {
+const order = (sequelize) => {
+  const order_model = sequelize.define('order', {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true
     },
+    user_id: {  // ✅ AGREGAR ESTE CAMPO ESENCIAL
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'users',
+        key: 'id'
+      },
+      validate: {
+        notNull: {
+          msg: 'El user_id es requerido'
+        }
+      }
+    },
     total: {
       type: DataTypes.FLOAT,
       allowNull: false,
       validate: {
-        min: 0
+        min: 0,
+        notNull: {
+          msg: 'El total es requerido'
+        }
       }
     },
     estado: {
       type: DataTypes.ENUM('pendiente', 'confirmado', 'preparando', 'listo', 'entregado', 'cancelado'),
-      defaultValue: 'pendiente'
+      defaultValue: 'pendiente',
+      validate: {
+        isIn: {
+          args: [['pendiente', 'confirmado', 'preparando', 'listo', 'entregado', 'cancelado']],
+          msg: 'Estado no válido'
+        }
+      }
     },
-    metodoPago: {
+    metodo_pago: {
       type: DataTypes.ENUM('efectivo', 'tarjeta', 'qr'),
-      defaultValue: 'efectivo'
+      defaultValue: 'efectivo',
+      validate: {
+        isIn: {
+          args: [['efectivo', 'tarjeta', 'qr']],
+          msg: 'Método de pago no válido'
+        }
+      }
     },
-    numeroPedido: {
+    numero_pedido: {
       type: DataTypes.STRING,
       unique: true,
       allowNull: true
@@ -34,29 +62,45 @@ const Order = (sequelize) => {
     }
   }, {
     tableName: 'orders',
-    timestamps: true
+    timestamps: true,
+    underscored: true,  // ✅ IMPORTANTE: Para usar created_at en lugar de createdAt
+    indexes: [
+      {
+        fields: ['user_id']  // ✅ Índice para mejor performance
+      },
+      {
+        fields: ['estado']   // ✅ Índice para búsquedas por estado
+      }
+    ]
   });
 
-  OrderModel.associate = (models) => {
-    OrderModel.belongsTo(models.User, {
-      foreignKey: 'userId',
+  order_model.associate = (models) => {
+    order_model.belongsTo(models.user, {  
+      foreignKey: 'user_id',
       as: 'user'
     });
-    OrderModel.hasMany(models.OrderItem, {
-      foreignKey: 'orderId',
-      as: 'items'
+    order_model.hasMany(models.orderitem, { 
+      foreignKey: 'order_id',
+      as: 'items',
+      onDelete: 'CASCADE'  // ✅ Cuando se elimine order, se eliminan sus items
     });
   };
 
   // Hook para generar número de pedido
-  OrderModel.beforeCreate(async (order) => {
-    if (!order.numeroPedido) {
-      const count = await OrderModel.count();
-      order.numeroPedido = `PED${String(count + 1).padStart(4, '0')}`;
+  order_model.beforeCreate(async (order) => {
+    if (!order.numero_pedido) {
+      try {
+        const count = await order_model.count();
+        order.numero_pedido = `PED${String(count + 1).padStart(4, '0')}`;
+      } catch (error) {
+        // Fallback en caso de error
+        const timestamp = Date.now().toString().slice(-6);
+        order.numero_pedido = `PED${timestamp}`;
+      }
     }
   });
 
-  return OrderModel;
+  return order_model;
 };
 
-export default Order;
+export default order;

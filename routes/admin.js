@@ -1,79 +1,38 @@
-// routes/admin.js
+// routes/admin.js - VERSIÓN FINAL CORREGIDA
 import express from 'express';
-import { Order, User, Product } from '../models/index.js';
-import { protect, restrictTo } from '../middleware/auth.js';
-import { Op } from 'sequelize';
+import { protect, restrict_to } from '../middleware/auth.js';
+import { 
+  get_dashboard_stats, 
+  get_recent_orders,
+  get_all_users,
+  get_all_products,
+  get_advanced_stats
+} from '../controllers/admin_controller.js';
+
+// ✅ IMPORTAR funciones desde sus controladores correctos
+import { get_user_by_id, delete_user, update_user_role } from '../controllers/user_controller.js';
+import { get_order_stats } from '../controllers/order_controller.js';
 
 const router = express.Router();
 
 // Todas las rutas requieren ser admin
-router.use(protect, restrictTo('admin'));
+router.use(protect, restrict_to('admin'));
 
-// Estadísticas del dashboard
-router.get('/dashboard', async (req, res) => {
-  try {
-    const totalUsers = await User.count();
-    const totalProducts = await Product.count();
-    const totalOrders = await Order.count();
-    
-    const recentOrders = await Order.findAll({
-      include: [{
-        model: User,
-        as: 'user',
-        attributes: ['nombre', 'email']
-      }],
-      order: [['createdAt', 'DESC']],
-      limit: 10
-    });
+// ==================== DASHBOARD Y ESTADÍSTICAS ====================
+router.get('/dashboard', get_dashboard_stats);
+router.get('/stats/advanced', get_advanced_stats);
 
-    const revenue = await Order.sum('total', {
-      where: {
-        estado: 'entregado'
-      }
-    });
+// ==================== GESTIÓN DE PEDIDOS ====================
+router.get('/recent-orders', get_recent_orders);
+router.get('/stats/orders', get_order_stats);    // ✅ Ahora existe
 
-    res.json({
-      success: true,
-      stats: {
-        totalUsers,
-        totalProducts,
-        totalOrders,
-        revenue: revenue || 0
-      },
-      recentOrders
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error al cargar estadísticas'
-    });
-  }
-});
+// ==================== GESTIÓN DE USUARIOS ====================
+router.get('/users', get_all_users);
+router.get('/users/:id', get_user_by_id);        // ✅ Desde user_controller
+router.put('/users/:id/role', update_user_role);
+router.delete('/users/:id', delete_user);        // ✅ Desde user_controller
 
-// Pedidos recientes
-router.get('/recent-orders', async (req, res) => {
-  try {
-    const orders = await Order.findAll({
-      include: [{
-        model: User,
-        as: 'user',
-        attributes: ['nombre', 'email']
-      }],
-      order: [['createdAt', 'DESC']],
-      limit: 20
-    });
-
-    res.json({
-      success: true,
-      cantidad: orders.length,
-      orders
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error al cargar pedidos'
-    });
-  }
-});
+// ==================== GESTIÓN DE PRODUCTOS ====================
+router.get('/products', get_all_products);
 
 export default router;

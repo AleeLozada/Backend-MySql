@@ -1,8 +1,8 @@
-// models/Category.js
+// models/category.js (versión con validaciones mejoradas)
 import { DataTypes } from 'sequelize';
 
-const Category = (sequelize) => {
-  const CategoryModel = sequelize.define('Category', {
+const category = (sequelize) => {
+  const category_model = sequelize.define('category', {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
@@ -11,17 +11,35 @@ const Category = (sequelize) => {
     nombre: {
       type: DataTypes.STRING,
       allowNull: false,
-      unique: true,
+      unique: {
+        name: 'categories_nombre_unique',
+        msg: 'Ya existe una categoría con este nombre'
+      },
       validate: {
-        notEmpty: true
+        notEmpty: {
+          msg: 'El nombre de la categoría no puede estar vacío'
+        },
+        len: {
+          args: [2, 50],
+          msg: 'El nombre debe tener entre 2 y 50 caracteres'
+        }
       }
     },
     slug: {
       type: DataTypes.STRING,
       allowNull: false,
-      unique: true,
+      unique: {
+        name: 'categories_slug_unique',
+        msg: 'Ya existe una categoría con este slug'
+      },
       validate: {
-        notEmpty: true
+        notEmpty: {
+          msg: 'El slug no puede estar vacío'
+        },
+        is: {
+          args: /^[a-z0-9-]+$/,
+          msg: 'El slug solo puede contener letras minúsculas, números y guiones'
+        }
       }
     },
     imagen: {
@@ -35,17 +53,20 @@ const Category = (sequelize) => {
     }
   }, {
     tableName: 'categories',
-    timestamps: true
+    timestamps: false,
+    createdAt: false,
+    updatedAt: false,
+    underscored: true
   });
 
-  CategoryModel.associate = (models) => {
-    CategoryModel.hasMany(models.Product, {
-      foreignKey: 'categoryId',
+  category_model.associate = (models) => {
+    category_model.hasMany(models.product, {
+      foreignKey: 'category_id',
       as: 'products'
     });
   };
 
-  return CategoryModel;
+  return category_model;
 };
 
-export default Category;
+export default category;
